@@ -8,90 +8,84 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class PriceHolderTest {
 
 
-//        PriceHolder priceHolder = new PriceHolder();
-           ModernPriceHolder priceHolder = new ModernPriceHolder();
+    PriceHolderQ3 priceHolderQ3 = new PriceHolderQ3();
 
-        @Before
-        public void init() {
-            priceHolder.putPrice(NUMBER.ZERO.toString(), NUMBERS[0]);
-            priceHolder.putPrice(NUMBER.ONE.toString(), NUMBERS[1]);
-        }
-
-        @Test
-        public void simplePutGetTest() {
-            BigDecimal price = priceHolder.getPrice(NUMBER.ZERO.toString());
-            assertEquals(price, NUMBERS[0]);
-        }
-
-        @Test
-        public void waitForNextValueTest() {
-            BigDecimal expected = null;
-            changePriceInSeparateThread(NUMBER.ONE.toString());
-            try {
-                expected = priceHolder.waitForNextPrice(NUMBER.ONE.toString());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.out.print("Received: " + expected + " is " + priceHolder.getPrice(NUMBER.ONE.toString()));
-            assertEquals(expected, NUMBERS[2]);
-
-        }
-
-    @Test
-    public void shouldHasChangedWorksCorrectly() throws Exception {
-        priceHolder.putPrice("a", BigDecimal.valueOf(1.0));
-        priceHolder.putPrice("a", BigDecimal.valueOf(2.0));
-        assertEquals(priceHolder.hasPriceChanged("a"), true);
+    @Before
+    public void init() {
+        priceHolderQ3.putPrice("b", BigDecimal.valueOf(3.0));
+        priceHolderQ3.putPrice("d", BigDecimal.valueOf(5.0));
     }
 
     @Test
-    public void shouldWaitForNextValueReturnsImmediatelyIfThereIsAPriceChange() throws Exception {
-        priceHolder.putPrice("a", BigDecimal.valueOf(1.0));
-        assertEquals(priceHolder.getPrice("a"),BigDecimal.valueOf(1.0)) ;
-        priceHolder.putPrice("a", BigDecimal.valueOf(2.0));
-        assertEquals(priceHolder.waitForNextPrice("a"), BigDecimal.valueOf(2.0));
+    public void shouldReturnThePrice() {
+        BigDecimal price = priceHolderQ3.getPrice("b");
+        assertEquals(price, BigDecimal.valueOf(3.0));
+    }
+
+
+    @Test
+    public void shouldHasChangedWorksCorrectly() throws Exception {
+        priceHolderQ3.putPrice("a", BigDecimal.valueOf(1.0));
+        priceHolderQ3.putPrice("a", BigDecimal.valueOf(2.0));
+        assertTrue(priceHolderQ3.hasPriceChanged("a"));
+        priceHolderQ3.getPrice("a");
+        assertFalse(priceHolderQ3.hasPriceChanged("a"));
+    }
+
+    @Test
+    public void shouldWaitForNextValue() {
+        BigDecimal actual = null;
+        priceHolderQ3.getPrice("d");
+        changePriceInSeparateThread("d", BigDecimal.valueOf(9.0));
+        try {
+            actual = priceHolderQ3.waitForNextPrice("d");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        assertEquals(BigDecimal.valueOf(9.0), actual);
+
+    }
+
+    @Test
+    public void shouldWaitForNextValueReturnImmediatelyIfThereIsAPriceChange() throws Exception {
+        priceHolderQ3.putPrice("a", BigDecimal.valueOf(1.0));
+        assertEquals(priceHolderQ3.getPrice("a"), BigDecimal.valueOf(1.0));
+        priceHolderQ3.putPrice("a", BigDecimal.valueOf(2.0));
+        assertEquals(priceHolderQ3.waitForNextPrice("a"), BigDecimal.valueOf(2.0));
     }
 
     @Test
     public void shouldWaitForTheFirstValueToArrive() {
-        BigDecimal expected = null;
-        changePriceInSeparateThread("c");
+        BigDecimal actual = null;
+        changePriceInSeparateThread("c", BigDecimal.valueOf(7.0));
         try {
-            expected = priceHolder.waitForNextPrice("c");
+            actual = priceHolderQ3.waitForNextPrice("c");
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.print("Received: " + expected + " is " + priceHolder.getPrice(NUMBER.ONE.toString()));
-        assertEquals(expected, NUMBERS[2]);
+        assertEquals(BigDecimal.valueOf(7.0), actual);
 
     }
 
-    private void changePriceInSeparateThread(String e) {
-            Thread thread = new Thread(() -> {
-                try {
-                    Thread.sleep(5000);
-                    priceHolder.putPrice(e, NUMBERS[2]);
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            });
+    private void changePriceInSeparateThread(String e, BigDecimal p) {
+        Thread thread = new Thread(() -> {
+            try {
+                Thread.sleep(5000);
+                priceHolderQ3.putPrice(e, p);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
 
-            System.out.println("Looking for price change for " + NUMBER.ONE.toString() + ":"
-                    + priceHolder.getPrice(NUMBER.ONE.toString()));
-
-            thread.start();
-        }
-
-        final static BigDecimal[] NUMBERS = {
-                new BigDecimal(0.0), new BigDecimal(1.0), new BigDecimal(2.0),
-                new BigDecimal(3.0), new BigDecimal(4.0), new BigDecimal(5.0) };
-        enum NUMBER {
-            ZERO, ONE, TWO, THREE, FOUR, FIVE
-        }
+        thread.start();
     }
+
+}
 
