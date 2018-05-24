@@ -1,6 +1,4 @@
-/*
- * Copyright 2018 Goldman Sachs.
- */
+
 package com.gs.futures.refdata.services.prime;
 
 import com.google.common.primitives.Ints;
